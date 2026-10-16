@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Minimal New Tab",
+  "version": "1.0.0",
+  "description": "A clean, minimal new tab page for Chrome. Blank by default, with an optional bookmark grid that follows your system theme.",
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
+  "permissions": [
+    "bookmarks",
+    "favicon",
+    "storage"
+  ]
+}

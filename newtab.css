@@ -1,0 +1,364 @@
+/* ============================================================
+ * Minimal New Tab — newtab.css
+ * ------------------------------------------------------------
+ * 所有颜色都由 CSS 变量驱动，运行时由 newtab.js 根据系统
+ * 深浅色模式更新。
+ * ============================================================ */
+
+* {
+    box-sizing: border-box;
+}
+
+/* ------------------------------------------------------------
+ * 设计令牌
+ * ---------------------------------------------------------- */
+:root {
+    /* 颜色：由 applyBg() 在运行时覆盖 */
+    --bg: #ffffff;
+    --fg: #202124;
+    --fg-muted: rgba(0, 0, 0, .5);
+    --card-bg: rgba(0, 0, 0, .03);
+    --card-border: rgba(0, 0, 0, .06);
+    --item-hover: rgba(0, 0, 0, .06);
+    --panel-bg: rgba(255, 255, 255, .78);
+    --panel-border: rgba(0, 0, 0, .08);
+    --panel-shadow: 0 24px 60px rgba(0, 0, 0, .18);
+    --switch-bg: rgba(0, 0, 0, .15);
+    --switch-on: #3b82f6;
+
+    /* 网格尺寸：改这几个值可以调整书签的密度 */
+    --item-w: 30px;
+    --item-h: 32px;
+    --item-gap: 2px;
+    --items-per-row: 8;
+
+    /* 所有布局过渡共用的缓动函数 */
+    --ease: cubic-bezier(.4, 0, .2, 1);
+}
+
+html {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden; /* 页面永不滚动 */
+    background: var(--bg);
+    color: var(--fg);
+    font-family: system-ui,
+    -apple-system,
+    "Segoe UI Variable Display",
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+    letter-spacing: -0.005em;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ------------------------------------------------------------
+ * 舞台 —— 让内容在视口内水平垂直居中
+ * ---------------------------------------------------------- */
+#stage {
+    height: 100vh;
+    padding: 48px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.content {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+    max-width: 900px;
+    transform-origin: center center; /* fit-to-viewport 缩放的锚点 */
+}
+
+.content[hidden] {
+    display: none;
+}
+
+/* ------------------------------------------------------------
+ * 文件夹卡片
+ * ---------------------------------------------------------- */
+.folder {
+    width: fit-content;
+    padding: 12px;
+    border-radius: 14px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    animation: rise .5s cubic-bezier(.2, .7, .3, 1.1) backwards;
+    transition: width .3s var(--ease),
+    height .3s var(--ease);
+    overflow: hidden;
+}
+
+@keyframes rise {
+    from {
+        opacity: 0;
+        transform: translateY(16px) scale(.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* 测量目标高度时，临时禁用卡片及内部元素的所有过渡 */
+.folder.no-anim,
+.folder.no-anim .item {
+    transition: none !important;
+}
+
+/* ------------------------------------------------------------
+ * 书签格
+ * ---------------------------------------------------------- */
+.folder-items {
+    display: flex;
+    flex-wrap: wrap;
+    max-width: calc(
+            var(--items-per-row) * var(--item-w) +
+            var(--items-per-row) * var(--item-gap)
+    );
+}
+
+.item {
+    flex: 0 0 auto;
+    width: var(--item-w);
+    height: var(--item-h);
+    margin: calc(var(--item-gap) / 2);
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    text-decoration: none;
+    color: inherit;
+    overflow: hidden;
+    transition: width .3s var(--ease),
+    margin .3s var(--ease),
+    opacity .22s var(--ease),
+    transform .3s var(--ease),
+    background .16s ease;
+}
+
+/* 折叠状态下隐藏的书签：完全收起，不占布局空间 */
+.item.collapsed {
+    width: 0;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    transform: scale(.6);
+    pointer-events: none;
+}
+
+a.item:hover {
+    background: var(--item-hover);
+}
+
+.item img {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    object-fit: contain;
+    display: block;
+}
+
+/* "+N" / "×" 切换按钮，共用 .item 的布局 */
+.item.more {
+    appearance: none;
+    -webkit-appearance: none;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--fg-muted);
+    cursor: pointer;
+}
+
+.item.more:hover {
+    background: var(--item-hover);
+    color: var(--fg);
+}
+
+/* 展开后还有书签未显示时的提示行 */
+.more-hint {
+    flex: 0 0 100%;
+    margin: 8px 0 0;
+    text-align: center;
+    font-size: 10px;
+    line-height: 1.4;
+    letter-spacing: .04em;
+    color: var(--fg-muted);
+    opacity: .7;
+    user-select: none;
+}
+
+.more-hint[hidden] {
+    display: none;
+}
+
+/* ------------------------------------------------------------
+ * 设置按钮（右下角浮动）
+ * ---------------------------------------------------------- */
+.gear {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--panel-border);
+    border-radius: 50%;
+    background: var(--panel-bg);
+    color: var(--fg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .1);
+    cursor: pointer;
+    opacity: .55;
+    transition: opacity .2s ease,
+    transform .35s cubic-bezier(.34, 1.56, .64, 1),
+    background .2s ease,
+    box-shadow .2s ease;
+}
+
+.gear:hover {
+    opacity: 1;
+    transform: scale(1.08);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .16);
+}
+
+.gear:active {
+    transform: scale(.94);
+}
+
+.gear svg {
+    transition: transform .45s cubic-bezier(.34, 1.56, .64, 1);
+}
+
+.gear.open svg {
+    transform: rotate(90deg);
+}
+
+/* ------------------------------------------------------------
+ * 设置弹窗
+ * ---------------------------------------------------------- */
+.panel {
+    position: fixed;
+    right: 22px;
+    bottom: 74px;
+    width: 288px;
+    border-radius: 18px;
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    box-shadow: var(--panel-shadow);
+    backdrop-filter: blur(28px) saturate(1.4);
+    -webkit-backdrop-filter: blur(28px) saturate(1.4);
+    overflow: hidden;
+    transform-origin: bottom right;
+    animation: panelIn .3s cubic-bezier(.2, .8, .3, 1.08) both;
+}
+
+.panel[hidden] {
+    display: none;
+}
+
+@keyframes panelIn {
+    from {
+        opacity: 0;
+        transform: scale(.92) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.panel-head {
+    padding: 18px 20px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+}
+
+.panel-body {
+    padding: 0 10px 10px;
+}
+
+.item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 10px;
+}
+
+.item-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.item-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--fg);
+}
+
+/* ------------------------------------------------------------
+ * 开关
+ * ---------------------------------------------------------- */
+.switch {
+    position: relative;
+    display: inline-block;
+    flex: none;
+    width: 40px;
+    height: 22px;
+    cursor: pointer;
+}
+
+.switch input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.switch-track {
+    position: absolute;
+    inset: 0;
+    border-radius: 11px;
+    background: var(--switch-bg);
+    transition: background .22s ease;
+}
+
+.switch-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .28);
+    transition: transform .24s cubic-bezier(.34, 1.56, .64, 1);
+}
+
+.switch input:checked ~ .switch-track {
+    background: var(--switch-on);
+}
+
+.switch input:checked ~ .switch-track .switch-thumb {
+    transform: translateX(18px);
+}
